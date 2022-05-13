@@ -798,6 +798,15 @@ inline std::tuple<std::string, int, int, Move, float, Move> get_pv(const uct_nod
 	return std::make_tuple(pv, cp, depth, move, best_wp, ponderMove);
 }
 
+
+inline std::tuple<std::string, int, int, Move, float, Move, int> get_multi_pv(const uct_node_t* root_uct_node, const unsigned int best_root_child_index)
+{
+	const auto& best_root_uct_child = root_uct_node->child[best_root_child_index];
+	const int move_count = best_root_uct_child.move_count;
+
+	return std::tuple_cat(get_pv(root_uct_node, best_root_child_index), std::make_tuple(move_count));
+}
+
 // 訪問回数に応じてランダムに子ノードを選択
 inline unsigned int select_random_child_node(const uct_node_t* uct_node)
 {
@@ -888,17 +897,18 @@ std::tuple<Move, float, Move> get_and_print_pv(const bool use_random = false)
 		Move move_tmp;
 		float best_wp_tmp;
 		Move ponderMove_tmp;
+		int move_count;
 
 		// Multi PV表示
 		for (int i = 0; i < multipv_num; i++) {
 			const child_node_t* best_root_uct_child = sorted_root_uct_childs[i];
 			const unsigned int best_root_child_index = static_cast<unsigned int>(best_root_uct_child - root_uct_child);
 
-			std::tie(pv, cp, depth, move_tmp, best_wp_tmp, ponderMove_tmp) = get_pv(current_root, best_root_child_index);
+			std::tie(pv, cp, depth, move_tmp, best_wp_tmp, ponderMove_tmp, move_count) = get_multi_pv(current_root, best_root_child_index);
 			std::cout << "info multipv " << i + 1 << info_string;
 			if (best_root_uct_child->move_count > 0)
 				std::cout << " score cp " << cp;
-			std::cout << " depth " << depth << " pv " << pv << "\n";
+			std::cout << " depth " << depth << " pv " << pv << " move_count " << move_count << "\n";
 
 			if (i == 0) {
 				move = move_tmp;
